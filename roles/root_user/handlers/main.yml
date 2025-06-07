@@ -1,2 +1,7 @@
 ---
+
 # handlers file for root_user role
+- name: Set password expiry
+  ansible.builtin.command: chage -I -1 -m 7 -M 90 -W 5 -E -1 "{{ systemuser }}"
+  when: user_status.changed | bool
+  become: true

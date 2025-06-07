@@ -27,14 +27,12 @@
     update_password: on_create
     group: "{{ group_name }}"
     state: present
+  notify: Set password expiry
   register: user_status
 
 - name: Register user_status variable
   set_fact:
     task_changed: user_status.changed
-
-- name: Set account and password expiry
-  shell: chage -I -1 -m 7 -M 90 -W 5 -E -1 "{{ systemuser }}"
 
 - name: Ensure sudoers file is absent before creating a new one
   ansible.builtin.file:
