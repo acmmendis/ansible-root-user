@@ -3,9 +3,10 @@
 - name: Generate a random password
   set_fact:
     user_pass: "{{ pwd_alias }}"
+  no_log: true
 
 - name: Create non-root user group - "{{ group_name }}"
-  group:
+  ansible.builtin.group:
     name: "{{ group_name }}"
     system: false
     state: present
@@ -28,28 +29,22 @@
     group: "{{ group_name }}"
     state: present
   notify: Set password expiry
+          Retrieve Password
   register: user_status
-
-- name: Register user_status variable
-  set_fact:
-    task_changed: user_status.changed
+  become: true
 
 - name: Ensure sudoers file is absent before creating a new one
   ansible.builtin.file:
     path: "/etc/sudoers.d/{{ systemuser }}"
     state: absent
+  become: true
 
 - name: Set up sudoers for "{{ systemuser }}"
   ansible.builtin.lineinfile:
     path: "/etc/sudoers.d/{{ systemuser }}"
-    line: "{{ systemuser }} {{ sudoers }}"
+    line: "{{ systemuser }}   {{ sudoers }}"
     mode: "0440"
     create: true
     state: present
     validate: /usr/sbin/visudo -csf %s
-
-- name: Retrieve Password
-  debug:
-    msg: "Password for root user {{ systemuser }} - {{ user_pass }}"
-  when: user_status.changed | bool
-  tags: debug
+  become: true
