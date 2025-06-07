@@ -1,22 +1,22 @@
 ---
 
+- name: Exit playbook if systemuser is defined as 'root'
+  ansible.builtin.fail:
+    msg: "Playbook execution stopped: 'systemuser' cannot be 'root'."
+  when: systemuser == 'root'
+
 - name: Generate a random password
   set_fact:
     user_pass: "{{ pwd_alias }}"
   no_log: true
 
-- name: Create non-root user group - "{{ group_name }}"
+- name: Create a user group
   ansible.builtin.group:
-    name: "{{ group_name }}"
+    name: "{{ group_name | default(systemuser) }}"
     system: false
     state: present
   register: group_status
-  when: group_name is defined
-
-- name: Set group_name to "{{ systemuser }}" if not defined
-  set_fact:
-    group_name: "{{ systemuser }}"
-  when: group_name is not defined
+  become: true
 
 - name: Create user "{{ systemuser }}"
   ansible.builtin.user:
@@ -26,25 +26,23 @@
     shell: /bin/bash
     password: "{{ user_pass | password_hash('sha512') }}"
     update_password: on_create
-    group: "{{ group_name }}"
+    group: "{{ group_name | default(systemuser) }}"
     state: present
-  notify: Set password expiry
-          Retrieve Password
+  notify:
+    - Set password expiry
+    - Retrieve Password
   register: user_status
   become: true
+  failed_when: user_status is failed and user_status.msg is not defined
+  when: user_check.getent_passwd is not defined or systemuser not in user_check.getent_passwd
 
-- name: Ensure sudoers file is absent before creating a new one
-  ansible.builtin.file:
-    path: "/etc/sudoers.d/{{ systemuser }}"
-    state: absent
-  become: true
-
-- name: Set up sudoers for "{{ systemuser }}"
-  ansible.builtin.lineinfile:
-    path: "/etc/sudoers.d/{{ systemuser }}"
-    line: "{{ systemuser }}   {{ sudoers }}"
+- name: Ensure sudoers file for "{{ systemuser }}" contains only the correct entry
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/{{ systemuser }}"
+    content: "{{ systemuser }}   {{ sudoers }}\n"
     mode: "0440"
-    create: true
-    state: present
+    owner: root
+    group: root
+    force: true
     validate: /usr/sbin/visudo -csf %s
   become: true

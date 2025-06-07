@@ -11,13 +11,15 @@ The playbook generates a static, one-time password for the user, which is displa
 - Sets a secure, random password (displayed only once)
 - Configures password expiry policy
 - Sets up sudoers file for passwordless sudo (configurable)
+- Idempotent: will not overwrite or recreate an existing user
+- Exits with an error if you attempt to create the 'root' user
 
 ## Usage
 
 ```sh
-ansible-playbook main.yml -i inventory.yml -u ansibleuser --private-key ~/.ssh/id_rsa --become -e 'systemuser=rootuser comments="This is a root user"'
+ansible-playbook main.yml -i inventory.yml -u ansibleuser --private-key ~/.ssh/id_rsa --become -e "systemuser=rootuser comments='This is a root user'"
 
-ansible-playbook main.yml -i inventory.yml -u ansibleuser --private-key ~/.ssh/id_rsa --become -e 'systemuser=rootuser comments="This is a root user with specific group" group_name=mygroup'
+ansible-playbook main.yml -i inventory.yml -u ansibleuser --private-key ~/.ssh/id_rsa --become -e "systemuser=rootuser comments='This is a root user with specific group' group_name=mygroup"
 ```
 
 ### Extra Variables
@@ -29,6 +31,8 @@ ansible-playbook main.yml -i inventory.yml -u ansibleuser --private-key ~/.ssh/i
 
 ## Notes
 
-- The generated password is a OTP (one time password) that shown only once for security reasons.
+- The generated password is a one-time password (OTP) shown only once for security reasons.
 - The user is forced to change the password at first login.
+- The playbook will exit if you try to create the 'root' user.
+- If the user already exists, the playbook will fail and not make changes.
 - Ensure you have SSH access and privilege escalation rights on the target host.

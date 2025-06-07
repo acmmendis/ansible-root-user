@@ -11,4 +11,3 @@
     msg: "Password for root user {{ systemuser }} - {{ user_pass }}"
   when: user_status.changed | bool
   tags: debug
-  no_log: true
