@@ -1,0 +1,5 @@
+---
+# systemuser: "n484012"
+comments: "root user"
+pwd_alias: "{{ lookup('password', '/dev/null length=21 chars=ascii_letters') }}"
+sudoers: "   ALL=(ALL)       ALL"

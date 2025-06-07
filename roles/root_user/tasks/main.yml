@@ -1,0 +1,57 @@
+---
+
+- name: Generate a random password
+  set_fact:
+    user_pass: "{{ pwd_alias }}"
+
+- name: Create non-root user group - "{{ group_name }}"
+  group:
+    name: "{{ group_name }}"
+    system: false
+    state: present
+  register: group_status
+  when: group_name is defined
+
+- name: Set group_name to "{{ systemuser }}" if not defined
+  set_fact:
+    group_name: "{{ systemuser }}"
+  when: group_name is not defined
+
+- name: Create user "{{ systemuser }}"
+  ansible.builtin.user:
+    name: "{{ systemuser }}"
+    comment: "{{ comments }}"
+    append: false
+    shell: /bin/bash
+    password: "{{ user_pass | password_hash('sha512') }}"
+    update_password: on_create
+    group: "{{ group_name }}"
+    state: present
+  register: user_status
+
+- name: Register user_status variable
+  set_fact:
+    task_changed: user_status.changed
+
+- name: Set account and password expiry
+  shell: chage -I -1 -m 7 -M 90 -W 5 -E -1 "{{ systemuser }}"
+
+- name: Ensure sudoers file is absent before creating a new one
+  ansible.builtin.file:
+    path: "/etc/sudoers.d/{{ systemuser }}"
+    state: absent
+
+- name: Set up sudoers for "{{ systemuser }}"
+  ansible.builtin.lineinfile:
+    path: "/etc/sudoers.d/{{ systemuser }}"
+    line: "{{ systemuser }} {{ sudoers }}"
+    mode: "0440"
+    create: true
+    state: present
+    validate: /usr/sbin/visudo -csf %s
+
+- name: Retrieve Password
+  debug:
+    msg: "Password for root user {{ systemuser }} - {{ user_pass }}"
+  when: user_status.changed | bool
+  tags: debug

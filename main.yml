@@ -1,0 +1,9 @@
+- name: Privileged User Creation
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: root user
+      import_role:
+        name: root_user
