@@ -1,5 +1,5 @@
 ---
 
-comments: "root user by Ansible"
+comments: "root user created by ansible role"
 pwd_alias: "{{ lookup('password', '/dev/null length=21 chars=ascii_letters') }}"
 sudoers: "ALL=(ALL) ALL"
